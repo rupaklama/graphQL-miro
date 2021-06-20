@@ -1,0 +1,39 @@
+# .graphql extension makes it clear that it contains graphQL code
+
+# 'schema' - A graph of data structure
+
+# normal queries
+type Query {
+  # an array where each item is a type job
+  # array of Jobs from below
+  jobs: [Job]
+
+  # to get a single job
+  # In graphQL, we can pass args to query using this syntax
+  # & the return type is Job object
+  job(id: ID!): Job 
+
+  company(id: ID!): Company
+}
+
+# schema types
+type Company {
+  id: ID!
+  name: String
+  description: String
+  # type is array of Job objects
+  jobs: [Job]
+}
+
+type Job {
+  # graphQL provides a built in type 'ID' which is similar to STRING - sent as a string in json
+  # '!' - required, never be NULL
+  id: ID!
+  title: String
+  description: String
+  
+  # NOTE - To access data from Job to Company
+  # Note - setting up Nested Queries with field - 'company'
+  # Linking another data table, similar to foreign key in relational database
+  company: Company
+}
