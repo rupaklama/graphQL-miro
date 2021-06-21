@@ -38,7 +38,28 @@ const resolvers = require('./resolvers');
 
 // NOTE - Basic setup for using Apollo Server with Express
 // Apollo server instance with our type definitions & resolver objects
-const apolloServer = new ApolloServer({ typeDefs, resolvers });
+// Note - We pass 'context' property into an instance of Apollo Server in server.js as initial setup
+// 'context' will be an func which gets Object that contains Express Request Object
+// NOTE - this function will return 'context' object in the Resolver
+const apolloServer = new ApolloServer({
+  typeDefs,
+  resolvers,
+  context: ({ req }) => ({
+    // here we can extract any information we want from the HTTP Request &
+    // make available in the 'context' to be visible in the Resolver
+    // method: req.method, - we get access to Http method like POST or
+
+    // accessing 'user' data in the request body
+    // 'undefined' - not authenticated, user is only defined if we send valid access token - jwt
+
+    // NOTE - if user is not logged in frontend, the request will not include access token
+    // In this case, req.user will be undefined. We want to check first if req.user is defined
+    user: req.user && db.users.get(req.user.sub), // passing id as arg
+    // 'sub' meaning 'user id' in context object, name alias by graphQL
+    // Above will return all 'user' data from db
+  }),
+});
+
 // applyMiddleware func - to connect Apollo server into our existing existing Express app
 // passing instance of express app from above &
 // optionally we can also set a path that is where we want to expose graphQL endpoint on our server

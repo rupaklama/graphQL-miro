@@ -1,6 +1,9 @@
 // local database
 const db = require('./db');
 
+// NOTE - The resolve function works also by returning a Promise - async fashion
+// making request to outside server
+
 // The purpose of resolve is that it must return a data that represents a 'data/document'
 // resolve func also works by returning a PROMISE - async request
 // very important func which performs the 'Search & Get the Data' into our database
@@ -21,6 +24,7 @@ const Query = {
 };
 
 // THIS IS TO REFLECT THE STRUCTURE OF OUR SCHEMA TYPES
+// BY DEFINING NEW OBJECT TYPES
 
 // NOTE - whenever there's a Company Object where request is a 'job' field,
 // this function will be invoked
@@ -48,4 +52,43 @@ const Job = {
   // to access the field - 'companyId' which is pass down as props above
 };
 
-module.exports = { Query, Job, Company };
+// we also need to match the mutation structure Schema also
+// Mutation is a function that returns the value
+const Mutation = {
+  // root is the parent object - parentValue
+
+  // NOTE - CHECK IF USER IS AUTHENTICATED BEFORE POSTING A JOB
+  // WE DO THIS WITH THIRD PARAM PASSED TO RESOLVED FUNC - CONTEXT
+  // With Context we can access things that are not part of GraphQL itself
+  // but are provided by our Application.
+
+  // createJob: (root, { companyId, title, description }, context) => {
+  createJob: (root, { input }, context) => {
+    // note - context can contain whatever we want &
+    // it's up to us to put something into the context in first place
+    // Note - We pass 'context' property into an instance of Apollo Server in server.js as initial setup
+    console.log('context:', context);
+
+    // this will skip rest of the code here
+    // return null;
+
+    // user not authenticated
+    if (!context.user) {
+      // NOTE - throwing an error will cause GraphQL server to return Error Response Object
+      throw new Error('Unauthorized');
+    }
+
+    // using create method which takes an Object & returns 'String' that will be the ID of new object
+    // const id = db.jobs.create({ companyId, title, description });
+    const id = db.jobs.create({ ...input, companyId: context.user.companyId });
+    // setting companyId field from context so that we can use it in JobForm component
+
+    // now to return 'Job' object to display in the Client
+    return db.jobs.get(id);
+    // by doing this, we can query any Child Schema related to 'Job' object
+    // with SINGLE QUERY instead of TWO - BEST PRACTICE FOR MUTATION
+  },
+};
+
+// This will be pass down into Apollo server instance in server.js
+module.exports = { Query, Job, Company, Mutation };

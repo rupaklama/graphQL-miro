@@ -1,12 +1,15 @@
 // Common logic to make GraphQL Requests over HTTP
 
+import { getAccessToken, isLoggedIn } from './auth';
+
 // apollo server
 const endPointURL = 'http://localhost:9000/graphql';
 
 // Generic Function - reusable func to make any query requests with
 // take in query & optional graphQL query variables by setting it an empty object
 async function graphqlRequest(query, variables = {}) {
-  const response = await fetch(endPointURL, {
+  // request object
+  const request = {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -15,7 +18,14 @@ async function graphqlRequest(query, variables = {}) {
       // query variable
       variables: variables,
     }),
-  });
+  };
+
+  // to persist auth user with token
+  if (isLoggedIn()) {
+    request.headers['authorization'] = 'Bearer ' + getAccessToken();
+  }
+
+  const response = await fetch(endPointURL, request);
 
   // to get the response body
   const responseBody = await response.json();
@@ -30,8 +40,34 @@ async function graphqlRequest(query, variables = {}) {
     throw new Error(message);
   }
 
+  // GraphQL 'query type' returns a 'data' in DATA PROPERTY
   // 'data' property of graphQL query consists response data
   return responseBody.data;
+}
+
+// Sending a GraphQL Request for Mutation is no different than sending queries like below
+// Calling a Mutation from Client
+export async function createJob(input) {
+  const mutation = `
+  mutation CreateJob($input: CreateJobInput){
+
+    # GraphQL supports ALIAS to give a Custom Name
+    # to the Resolve Object. 
+    # Here, the Result of createJob is named as 'job'
+
+      job: createJob(input: $input) {
+        id
+        title
+        company {
+          id
+          name
+        }
+      }
+    }
+  `;
+
+  const { job } = await graphqlRequest(mutation, { input });
+  return job;
 }
 
 // to load single job

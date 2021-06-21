@@ -2,11 +2,13 @@
 
 # 'schema' - A graph of data structure
 
-# normal queries
+# Query Type is to READ DATA without modifying 
+# NOTE - All Queries must return result/response object 
+# right side of the ':' is the response object
 type Query {
   # an array where each item is a type job
   # array of Jobs from below
-  jobs: [Job]
+  jobs: [Job] 
 
   # to get a single job
   # In graphQL, we can pass args to query using this syntax
@@ -16,7 +18,30 @@ type Query {
   company(id: ID!): Company
 }
 
-# schema types
+# mutation types - Mutation is to change data directly.
+# root mutation
+type Mutation {
+  # id is assigned by the Server, we don't want to pass it from Client
+  # NOTE - All mutation must return result/response object just like with Query types
+
+  # This got Re-factor down below
+  # createJob(title: String, description: String, companyId: ID): Job
+
+  # note instead of returning ': ID', we want to return 'Job' object for Client Side 
+  # to display New Job including all its fields - better choice 
+  # By doing this, we can query any Child Schema related to 'Job' object 
+  # with SINGLE QUERY instead of TWO - BEST PRACTICE FOR MUTATION
+
+  # Instead of passing three arguments or more, we can pass a Single Argument 
+  # that contains all the fields for the Job to be created
+  # As arguments, we can only use Input Types 
+  createJob(input: CreateJobInput): Job
+  # note - we also need to update resolver 
+}
+
+
+
+# schema types are also known as Output Types to return them in response to a query
 type Company {
   id: ID!
   name: String
@@ -37,3 +62,15 @@ type Job {
   # Linking another data table, similar to foreign key in relational database
   company: Company
 }
+
+# NOTE - Things like accepting Single Input Argument for each Mutation are some of the Best Practices
+# Input Types are Argument Types to pass into Mutation to avoid passing lots of arguments 
+# This will make it lot easier on Client Side to call our APIs
+# It's common to name Input Type by adding 'input' at the end  
+input CreateJobInput {
+  # createJob(title: String, description: String, companyId: ID): Job
+  # Arguments are pass down as Fields here
+  title: String
+  description: String
+}
+
