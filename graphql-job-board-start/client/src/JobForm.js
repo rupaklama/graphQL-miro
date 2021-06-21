@@ -22,7 +22,8 @@ export class JobForm extends Component {
       // mutation returns a promise
       .then(job => {
         // server automatically assigns companyId to a new job based on the authenticated user
-        // since user has a companyId field associated with it
+        // since user has a companyId field associated with it &
+        // it's more secure since each user can create job for their own company
         this.props.history.push(`/jobs/${job.id}`);
       });
 

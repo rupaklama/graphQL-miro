@@ -88,5 +88,11 @@
     "title": "Product manager",
     "description": "You need to handle developers",
     "companyId": "HJRa-DOuG"
+  },
+  {
+    "id": "S1oyd7Rod",
+    "title": "GraphQL developer",
+    "description": "to create queries",
+    "companyId": "SJV0-wdOM"
   }
 ]
