@@ -92,6 +92,25 @@ const client = new ApolloClient({
 //   return responseBody.data;
 // }
 
+// to reuse this query to solve some caching issues
+const jobQuery = gql`
+  # query name is required if we want to pass variables
+  # we can also optional name - operational name
+  # Naming the query can be useful for debugging
+
+  query JobQuery($id: ID!) {
+    job(id: $id) {
+      id
+      title
+      company {
+        id
+        name
+      }
+      description
+    }
+  }
+`;
+
 // Sending a GraphQL Request for Mutation is no different than sending queries like below
 // Calling a Mutation from Client
 export async function createJob(input) {
@@ -108,6 +127,7 @@ export async function createJob(input) {
           id
           name
         }
+        description
       }
     }
   `;
@@ -115,35 +135,78 @@ export async function createJob(input) {
   // const { job } = await graphqlRequest(mutation, { input });
 
   // NOTE - Since it's a Mutation, we use 'mutate' method instead of a 'query'
-  const { data } = await client.mutate({ mutation, variables: { input } });
+
+  // To avoid making TWO requests to the Server every time we create a job
+  // because when we sent a mutation we already get back the new job details in the RESPONSE
+  // so NO NEED to make a separate query to get the same data again
+  const { data } = await client.mutate({
+    mutation,
+    variables: { input },
+    // update prop gives us full control over the cache
+    // update is the function that will be called after the mutation has been executed
+    // It receives TWO PARAMS
+    // 'cache' - In documentation, sometimes they call it store or proxy, it
+    // an Object that lets you manipulate what store in cache
+    // 'mutationResult' - a response we get from the Server when we send this mutation
+    update: (cache, { data }) => {
+      // mutationResult is a data object in the response
+      // console.log('mutation result:', mutationResult);
+      // NOTE - We want to save Newly Created Job object into the Cache
+      // So, apollo can find data in the cache & it does not need to make another request to the Server
+
+      // NOTE - we can use 'cache' object to modify what store in cache
+      // writeQuery() to save the result of query which takes some args
+      // query - this is normally the regular query that generated the result
+
+      // After executing the query, Apollo Client calls this writeQuery method
+      // passing the query & data received as response. Here we are doing something special
+      // we want to update the cache with data returned by mutation but we want that
+      // data to be used whenever we make query to load the same data - job
+      cache.writeQuery({
+        query: jobQuery,
+        variables: { id: data.job.id },
+        data: data,
+      });
+      // note - we also need to specify the variables associated with the query
+      // we need to specify the 'id' of job to be cached,
+      // when we load the job, we pass 'id' as a query variable so when writing to a cache
+      // we need the SAME VARIABLE, data prop is what returned by mutation
+
+      // note - the last argument is the 'data' prop
+      // the value will be the value of the data parameter passed to this function
+
+      // note - above we are Updating the Cache After a Mutation
+    },
+  });
   return data.job;
 }
 
 // to load single job
 export async function loadJob(id) {
-  const query = gql`
-    # query name is required if we want to pass variables
-    # we can also optional name - operational name
-    # Naming the query can be useful for debugging
+  // NOTE - USING THIS ABOVE
+  // const query = gql`
+  //   # query name is required if we want to pass variables
+  //   # we can also optional name - operational name
+  //   # Naming the query can be useful for debugging
 
-    query JobQuery($id: ID!) {
-      job(id: $id) {
-        id
-        title
-        company {
-          id
-          name
-        }
-        description
-      }
-    }
-  `;
+  //   query JobQuery($id: ID!) {
+  //     job(id: $id) {
+  //       id
+  //       title
+  //       company {
+  //         id
+  //         name
+  //       }
+  //       description
+  //     }
+  //   }
+  // `;
 
   // const data = await graphqlRequest(query, { id });
 
   // note - here we also need to pass query variables
   // we can do it using another option - variables prop
-  const { data } = await client.query({ query, variables: { id } });
+  const { data } = await client.query({ query: jobQuery, variables: { id } });
 
   // 'data' property of graphQL query consists response data
   return data.job;
@@ -170,7 +233,10 @@ export async function loadJobs() {
   const {
     // nested destructuring
     data: { jobs },
-  } = await client.query({ query });
+    // NOTE - BY DEFAULT, Apollo client applies Caching 'cache-first' which might causes unexpected results
+    // To override, we can use 'fetchPolicy' prop with provided values that we can choose
+    // 'no-cache' - no caching, data will be always fetch from the server
+  } = await client.query({ query, fetchPolicy: 'no-cache' });
   // NOTE - query method returns a PROMISE with props - data, errors, loading, networkStatus, stale
   // basically a graphQL  Response Object
 
