@@ -92,6 +92,58 @@ const client = new ApolloClient({
 //   return responseBody.data;
 // }
 
+// FRAGMENTS - To avoid duplicate code
+const jobDetailFragment = gql`
+  # on - in which query type to select fields from
+  fragment JobDetail on Job {
+    id
+    title
+    company {
+      id
+      name
+    }
+    description
+  }
+`;
+
+// MOVING ALL THE QUERIES & MUTATIONS TO TOP LEVEL VARIABLES
+const createJobMutation = gql`
+  mutation CreateJob($input: CreateJobInput) {
+    # GraphQL supports ALIAS to give a Custom Name
+    # to the Resolve Object.
+    # Here, the Result of createJob is named as 'job'
+
+    job: createJob(input: $input) {
+      # id
+      # title
+      # company {
+      #   id
+      #   name
+      # }
+      # description
+      ...JobDetail
+    }
+  }
+  # need to include fragment definition here
+  # we can not use 'jobDetail' without defining it first
+  # It's value will be pass on 'jobDetail'
+  ${jobDetailFragment}
+`;
+
+const companyQuery = gql`
+  query CompanyQuery($id: ID!) {
+    company(id: $id) {
+      id
+      name
+      description
+      jobs {
+        id
+        title
+      }
+    }
+  }
+`;
+
 // to reuse this query to solve some caching issues
 const jobQuery = gql`
   # query name is required if we want to pass variables
@@ -100,13 +152,30 @@ const jobQuery = gql`
 
   query JobQuery($id: ID!) {
     job(id: $id) {
+      # id
+      # title
+      # company {
+      #   id
+      #   name
+      # }
+      # description
+      ...JobDetail
+    }
+  }
+  ${jobDetailFragment}
+`;
+
+const jobsQuery = gql`
+  # declaring Operation Name - we see it on log messages
+  # helpful when debugging
+  query JobsQuery {
+    jobs {
       id
       title
       company {
         id
         name
       }
-      description
     }
   }
 `;
@@ -114,24 +183,6 @@ const jobQuery = gql`
 // Sending a GraphQL Request for Mutation is no different than sending queries like below
 // Calling a Mutation from Client
 export async function createJob(input) {
-  const mutation = gql`
-    mutation CreateJob($input: CreateJobInput) {
-      # GraphQL supports ALIAS to give a Custom Name
-      # to the Resolve Object.
-      # Here, the Result of createJob is named as 'job'
-
-      job: createJob(input: $input) {
-        id
-        title
-        company {
-          id
-          name
-        }
-        description
-      }
-    }
-  `;
-
   // const { job } = await graphqlRequest(mutation, { input });
 
   // NOTE - Since it's a Mutation, we use 'mutate' method instead of a 'query'
@@ -140,7 +191,7 @@ export async function createJob(input) {
   // because when we sent a mutation we already get back the new job details in the RESPONSE
   // so NO NEED to make a separate query to get the same data again
   const { data } = await client.mutate({
-    mutation,
+    mutation: createJobMutation,
     variables: { input },
     // update prop gives us full control over the cache
     // update is the function that will be called after the mutation has been executed
@@ -214,19 +265,6 @@ export async function loadJob(id) {
 
 // to load jobs
 export async function loadJobs() {
-  const query = gql`
-    {
-      jobs {
-        id
-        title
-        company {
-          id
-          name
-        }
-      }
-    }
-  `;
-
   // note - using instance of apollo client here now
   // .query() - to send a request or make a query
   // sending above graphQL query
@@ -236,7 +274,7 @@ export async function loadJobs() {
     // NOTE - BY DEFAULT, Apollo client applies Caching 'cache-first' which might causes unexpected results
     // To override, we can use 'fetchPolicy' prop with provided values that we can choose
     // 'no-cache' - no caching, data will be always fetch from the server
-  } = await client.query({ query, fetchPolicy: 'no-cache' });
+  } = await client.query({ query: jobsQuery, fetchPolicy: 'no-cache' });
   // NOTE - query method returns a PROMISE with props - data, errors, loading, networkStatus, stale
   // basically a graphQL  Response Object
 
@@ -247,22 +285,8 @@ export async function loadJobs() {
 }
 
 export async function loadCompany(id) {
-  const query = gql`
-    query CompanyQuery($id: ID!) {
-      company(id: $id) {
-        id
-        name
-        description
-        jobs {
-          id
-          title
-        }
-      }
-    }
-  `;
-
   // const { company } = await graphqlRequest(query, { id });
-  const { data } = await client.query({ query, variables: { id } });
+  const { data } = await client.query({ query: companyQuery, variables: { id } });
   return data.company;
 }
 
