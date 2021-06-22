@@ -1,0 +1,33 @@
+type Query {
+  messages: [Message]
+}
+
+type Mutation {
+  addMessage(input: MessageInput!): Message
+}
+
+# GraphQL Subscriptions - allow Client to receive update from the Server.
+# They are bit like queries to get some data from the Server.
+# Query is one off operation where you send Request & get Response back.
+# Subscriptions - we can receive multiple values over time as soon as they become available.
+# so that we can get real time update if we like.
+
+# NOTE - Subscriptions is another TYPE just like query & mutation
+type Subscription {
+  # here we can add fields as usual
+  # By convention, we usually choose a name that describes an Event
+  messageAdded: Message
+  # returning Message Object above
+}
+
+
+
+type Message {
+  id: ID!
+  from: String 
+  text: String
+}
+
+input MessageInput {
+  text: String
+}
