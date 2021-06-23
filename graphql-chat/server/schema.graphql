@@ -15,12 +15,10 @@ type Mutation {
 # NOTE - Subscriptions is another TYPE just like query & mutation
 type Subscription {
   # here we can add fields as usual
-  # By convention, we usually choose a name that describes an Event
+  # By convention, we usually choose a name that describes an Event TYPES
   messageAdded: Message
   # returning Message Object above
 }
-
-
 
 type Message {
   id: ID!

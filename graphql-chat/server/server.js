@@ -27,13 +27,20 @@ app.use(
 const typeDefs = fs.readFileSync('./schema.graphql', { encoding: 'utf8' });
 const resolvers = require('./resolvers');
 
-function context({ req }) {
+// extracting http token into websocket
+function context({ req, connection }) {
   if (req && req.user) {
     return { userId: req.user.sub };
   }
+
+  // to check if this is a websocket connection, if so extract token
+  if (connection && connection.context && connection.context.accessToken) {
+    // for subscription, we have to decode token by ourself
+    const decodedToken = jwt.verify(connection.context.accessToken, jwtSecret);
+    return { userId: decodedToken.sub };
+  }
   return {};
 }
-
 const apolloServer = new ApolloServer({ typeDefs, resolvers, context });
 apolloServer.applyMiddleware({ app, path: '/graphql' });
 
@@ -48,7 +55,7 @@ app.post('/login', (req, res) => {
   res.send({ token });
 });
 
-// Creating http server new enable websocket by passing Express App as argument
+// Creating New Http server to enable websocket by passing Express App as argument
 const httpServer = http.createServer(app);
 
 // now we can tell apolloServer to install 'Subscription Handlers' on the http server
@@ -56,6 +63,6 @@ apolloServer.installSubscriptionHandlers(httpServer);
 // NOTE - this enables a Websocket to be use for GraphQL
 
 // app.listen(port, () => console.log(`Server started on port ${port}`));
-// Instead of calling with 'app' like above, we call it httpServer.listen()
+// Instead of calling with 'app' like above, we call it with httpServer.listen()
 httpServer.listen(port, () => console.log(`Server started on port ${port}`));
 // now we have our own httpServer as before it was created by Express App

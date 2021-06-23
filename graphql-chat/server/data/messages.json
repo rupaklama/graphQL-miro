@@ -8,5 +8,35 @@
     "id": "rJibZd1h_",
     "from": "alice",
     "text": "Hey whats up"
+  },
+  {
+    "id": "Hk6y2hx3u",
+    "from": "alice",
+    "text": "hi all"
+  },
+  {
+    "id": "BksZhhx3O",
+    "from": "alice",
+    "text": "How are you?"
+  },
+  {
+    "id": "rkrC1Cx2u",
+    "from": "bob",
+    "text": "Hi i am bob"
+  },
+  {
+    "id": "SJezWRg2u",
+    "from": "charlie",
+    "text": "hi"
+  },
+  {
+    "id": "Hy7sM0xn_",
+    "from": "alice",
+    "text": "hi guys"
+  },
+  {
+    "id": "B18470x3_",
+    "from": "alice",
+    "text": "hi"
   }
 ]
